@@ -12,6 +12,32 @@ import os
 MODEL_DIR = 'models' # Directory where your saved models are located
 TARGET_COLUMN = 'diagnosis' # The target column name from your dataset
 
+# --- Custom CSS for styling (optional, but good for colors/fonts) ---
+st.markdown("""
+<style>
+.green-header {
+    color: #4CAF50; /* Green color */
+    font-size: 3em; /* Larger font size */
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 0.2em;
+}
+.blue-subheader {
+    color: #2196F3; /* Blue color */
+    font-size: 1.5em; /* Medium font size */
+    text-align: center;
+    margin-bottom: 1em;
+}
+.created-by {
+    font-size: 1em;
+    color: #666666;
+    text-align: center;
+    margin-top: 2em;
+    margin-bottom: 2em;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # --- Function to load a specific model ---
 @st.cache_resource # Cache the model loading for performance
 def load_model(model_name_key):
@@ -27,8 +53,48 @@ def load_model(model_name_key):
         return None
 
 # --- Streamlit App Layout ---
-st.title("ML Classification Model Demonstrator")
+# --- Streamlit App Layout ---
+
+# 1. BITS Pilani Logo and Text
+# You'll need to upload the logo image to your GitHub repo (e.g., in an 'images' folder)
+# or use a publicly accessible URL for the image.
+# For simplicity, let's assume the logo is at 'images/bits_pilani_logo.png'
+# If you don't have the image file, you can comment this out or use a placeholder.
+
+# First, create a column layout for the logo and text side-by-side
+col1, col2 = st.columns([0.2, 0.8]) # Adjust ratios as needed
+
+with col1:
+    # Ensure you have the logo image in your GitHub repository
+    # e.g., in a folder named 'images' in the root of your repo
+    st.image("images/bits_pilani_logo.png", width=120) # Adjust path and width as needed
+
+with col2:
+    st.write(" ") # Add a little space
+    st.markdown("<h3>BITS Pilani</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:0.8em; color: #555;'>Pilani | Dubai | Goa | Hyderabad | Mumbai</p>", unsafe_allow_html=True)
+    st.markdown("<h4>WORK INTEGRATED</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>LEARNING PROGRAMMES</h4>", unsafe_allow_html=True)
+
+st.markdown("---") # A horizontal line for separation
+
+# 2. Main Title and Subtitle
+st.markdown("<h1 class='green-header'>Machine Learning Assignment 2</h1>", unsafe_allow_html=True)
+st.markdown("<h2 class='blue-subheader'>Breast Cancer Wisconsin Dataset (Kaggle/UCI)</h2>", unsafe_allow_html=True)
+
+# 3. Created By
+st.markdown("<p class='created-by'>Created by: Karthik Moorthy</p>", unsafe_allow_html=True)
+
+# Add some vertical space
+st.write("---")
+st.write(" ")
+st.write(" ")
+
+
+st.title("ML Classification Model Demonstrator") # This can be your functional title below the header
 st.write("Upload a CSV file to make predictions and view model performance.")
+
+# ... (rest of your app.py code for file uploader, model selection, metrics, etc.) ...
 
 # 1. Dataset Upload Option
 uploaded_file = st.file_uploader("Upload your CSV file (test data)", type=["csv"])
