@@ -65,7 +65,7 @@ def load_model(model_name_key):
 col_left, col_center, col_right = st.columns([1, 2, 1]) # Adjust ratios as needed for better centering
 
 with col_center:
-    st.image("images/bits_pilani_logo.png", width=150) # Adjust path and width as needed
+    st.image("images/bits_pilani_logo.png", width=500) # Adjust path and width as needed
     # You might want to slightly increase the width if centering it makes it look smaller
 
 
