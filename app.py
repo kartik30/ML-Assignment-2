@@ -16,6 +16,8 @@ TARGET_COLUMN = 'diagnosis' # The target column name from your dataset
 @st.cache_resource # Cache the model loading for performance
 def load_model(model_name_key):
     model_filename = os.path.join(MODEL_DIR, f"{model_name_key.lower().replace(' ', '_')}_pipeline.pkl")
+    # Clean up name for file, e.g., 'naive_bayes_classifier__pipeline.pkl' becomes 'naive_bayes_classifier_pipeline.pkl'
+    model_filename = model_filename.replace('__', '_')
     try:
         with open(model_filename, 'rb') as file:
             model_pipeline = pickle.load(file)
@@ -40,21 +42,32 @@ if uploaded_file is not None:
         if TARGET_COLUMN not in input_df.columns:
             st.warning(f"Warning: Target column '{TARGET_COLUMN}' not found in the uploaded file. Showing predictions only.")
             X_input = input_df
-            y_true = None # No ground truth for evaluation
+            y_true_raw = None # No ground truth for evaluation
         else:
             X_input = input_df.drop(columns=[TARGET_COLUMN], errors='ignore')
-            y_true = input_df[TARGET_COLUMN]
+            y_true_raw = input_df[TARGET_COLUMN]
 
+            # --- CRITICAL FIX: Convert y_true_raw to numerical labels ---
+            # Ensure the mapping matches what was used in train_models.py
+            # Map 'M' to 1 (malignant) and 'B' to 0 (benign)
+            label_mapping = {'M': 1, 'B': 0}
+            y_true = y_true_raw.map(label_mapping).astype(int) # Convert to int
+            # Handle any potential NaN values if a label outside 'M'/'B' exists
+            if y_true.isnull().any():
+                st.warning("Warning: Some target labels in the uploaded file were not 'M' or 'B' and were converted to NaN. These rows might be dropped for evaluation.")
+                # You might choose to drop these rows or handle them differently
+                X_input = X_input[y_true.notnull()]
+                y_true = y_true.dropna()
+        
         # Drop 'id' and 'Unnamed: 32' if they exist in the uploaded file
         X_input = X_input.drop(columns=['id', 'Unnamed: 32'], errors='ignore')
-
 
         # 2. Model Selection Dropdown
         model_options = {
             "Logistic Regression": "logistic_regression",
             "Decision Tree Classifier": "decision_tree_classifier",
             "K-Nearest Neighbor Classifier": "k-nearest_neighbor_classifier",
-            "Naive Bayes Classifier (Gaussian)": "naive_bayes_classifier_(gaussian)", # Match saved filename
+            "Naive Bayes Classifier (Gaussian)": "naive_bayes_classifier_(gaussian)",
             "Random Forest Classifier": "random_forest_classifier",
             "XGBoost Classifier": "xgboost_classifier"
         }
@@ -73,20 +86,20 @@ if uploaded_file is not None:
             st.write("Predictions (first 10):")
             st.write(y_pred[:10])
 
-            if y_true is not None: # Only evaluate if target column was in uploaded data
+            # Check if y_true is defined and not None (meaning target column was present and converted)
+            if y_true is not None and len(y_true) > 0: # Only evaluate if target column was in uploaded data AND it has valid entries
                 # 3. Display Evaluation Metrics
+                # Ensure metrics are calculated using numerical y_true and y_pred
                 accuracy = accuracy_score(y_true, y_pred)
-                precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
-                recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
-                f1 = f1_score(y_true, y_pred, average='weighted', zero_division=0)
+                precision = precision_score(y_true, y_pred, average='binary', zero_division=0) # Use 'binary' for 0/1 target
+                recall = recall_score(y_true, y_pred, average='binary', zero_division=0)      # Use 'binary' for 0/1 target
+                f1 = f1_score(y_true, y_pred, average='binary', zero_division=0)              # Use 'binary' for 0/1 target
                 mcc = matthews_corrcoef(y_true, y_pred)
 
                 try:
                     y_proba = model_pipeline.predict_proba(X_input)
-                    if len(np.unique(y_true)) > 2: # Multi-class AUC
-                        auc = roc_auc_score(y_true, y_proba, multi_class='ovr', average='weighted')
-                    else: # Binary AUC
-                        auc = roc_auc_score(y_true, y_proba[:, 1])
+                    # For binary classification, roc_auc_score expects probabilities for the positive class (1)
+                    auc = roc_auc_score(y_true, y_proba[:, 1])
                 except Exception as e:
                     auc = "N/A"
                     st.warning(f"Could not calculate AUC for this model/data. Error: {e}")
@@ -102,7 +115,8 @@ if uploaded_file is not None:
                 st.subheader("Confusion Matrix")
                 cm = confusion_matrix(y_true, y_pred)
                 fig, ax = plt.subplots(figsize=(6, 4))
-                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
+                            xticklabels=['B', 'M'], yticklabels=['B', 'M']) # Add labels for clarity
                 plt.xlabel("Predicted")
                 plt.ylabel("True")
                 st.pyplot(fig) # Display Matplotlib figure in Streamlit
@@ -110,7 +124,7 @@ if uploaded_file is not None:
                 st.subheader("Classification Report")
                 st.text(classification_report(y_true, y_pred, zero_division=0))
             else:
-                st.info("No ground truth (target column) found in uploaded data, so performance metrics cannot be calculated.")
+                st.info("No ground truth (target column) or valid labels found in uploaded data, so performance metrics cannot be calculated.")
 
     except Exception as e:
         st.error(f"Error processing the uploaded file: {e}")
