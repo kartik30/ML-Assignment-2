@@ -62,21 +62,12 @@ def load_model(model_name_key):
 # If you don't have the image file, you can comment this out or use a placeholder.
 
 # First, create a column layout for the logo and text side-by-side
-col1, col2 = st.columns([0.2, 0.8]) # Adjust ratios as needed
+col_left, col_center, col_right = st.columns([1, 2, 1]) # Adjust ratios as needed for better centering
 
-with col1:
-    # Ensure you have the logo image in your GitHub repository
-    # e.g., in a folder named 'images' in the root of your repo
-    st.image("images/bits_pilani_logo.png", width=120) # Adjust path and width as needed
+with col_center:
+    st.image("images/bits_pilani_logo.png", width=150) # Adjust path and width as needed
+    # You might want to slightly increase the width if centering it makes it look smaller
 
-with col2:
-    st.write(" ") # Add a little space
-    st.markdown("<h3>BITS Pilani</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size:0.8em; color: #555;'>Pilani | Dubai | Goa | Hyderabad | Mumbai</p>", unsafe_allow_html=True)
-    st.markdown("<h4>WORK INTEGRATED</h4>", unsafe_allow_html=True)
-    st.markdown("<h4>LEARNING PROGRAMMES</h4>", unsafe_allow_html=True)
-
-st.markdown("---") # A horizontal line for separation
 
 # 2. Main Title and Subtitle
 st.markdown("<h1 class='green-header'>Machine Learning Assignment 2</h1>", unsafe_allow_html=True)
