@@ -124,7 +124,7 @@ if uploaded_file is not None:
             "Logistic Regression": "logistic_regression",
             "Decision Tree Classifier": "decision_tree_classifier",
             "K-Nearest Neighbor Classifier": "k-nearest_neighbor_classifier",
-            "Naive Bayes Classifier (Gaussian)": "naive_bayes_classifier_(gaussian)",
+            "Naive Bayes Classifier (Gaussian)": "naive_bayes_classifier",
             "Random Forest Classifier": "random_forest_classifier",
             "XGBoost Classifier": "xgboost_classifier"
         }
