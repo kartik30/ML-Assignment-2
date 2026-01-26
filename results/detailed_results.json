@@ -1,0 +1,116 @@
+[
+    {
+        "model": "Logistic Regression",
+        "accuracy": 0.9737,
+        "auc": 0.996,
+        "precision": 0.9756,
+        "recall": 0.9524,
+        "f1": 0.9639,
+        "mcc": 0.9433,
+        "confusion_matrix": [
+            [
+                71,
+                1
+            ],
+            [
+                2,
+                40
+            ]
+        ]
+    },
+    {
+        "model": "Decision Tree",
+        "accuracy": 0.9386,
+        "auc": 0.9473,
+        "precision": 0.9487,
+        "recall": 0.881,
+        "f1": 0.9136,
+        "mcc": 0.8675,
+        "confusion_matrix": [
+            [
+                70,
+                2
+            ],
+            [
+                5,
+                37
+            ]
+        ]
+    },
+    {
+        "model": "K-Nearest Neighbor",
+        "accuracy": 0.9561,
+        "auc": 0.9823,
+        "precision": 0.9744,
+        "recall": 0.9048,
+        "f1": 0.9383,
+        "mcc": 0.9058,
+        "confusion_matrix": [
+            [
+                71,
+                1
+            ],
+            [
+                4,
+                38
+            ]
+        ]
+    },
+    {
+        "model": "Naive Bayes",
+        "accuracy": 0.9211,
+        "auc": 0.9891,
+        "precision": 0.9231,
+        "recall": 0.8571,
+        "f1": 0.8889,
+        "mcc": 0.8292,
+        "confusion_matrix": [
+            [
+                69,
+                3
+            ],
+            [
+                6,
+                36
+            ]
+        ]
+    },
+    {
+        "model": "Random Forest",
+        "accuracy": 0.9737,
+        "auc": 0.9967,
+        "precision": 1.0,
+        "recall": 0.9286,
+        "f1": 0.963,
+        "mcc": 0.9442,
+        "confusion_matrix": [
+            [
+                72,
+                0
+            ],
+            [
+                3,
+                39
+            ]
+        ]
+    },
+    {
+        "model": "XGBoost",
+        "accuracy": 0.9649,
+        "auc": 0.9967,
+        "precision": 1.0,
+        "recall": 0.9048,
+        "f1": 0.95,
+        "mcc": 0.9258,
+        "confusion_matrix": [
+            [
+                72,
+                0
+            ],
+            [
+                4,
+                38
+            ]
+        ]
+    }
+]

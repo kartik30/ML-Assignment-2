@@ -1,0 +1,12 @@
+{
+    "execution_date": "2026-01-27 01:32:40",
+    "dataset_path": "data.csv",
+    "total_samples": 569,
+    "training_samples": 455,
+    "test_samples": 114,
+    "num_features": 30,
+    "models_trained": 6,
+    "best_model": "Logistic Regression",
+    "best_accuracy": 0.9737,
+    "average_accuracy": 0.9546833333333334
+}
