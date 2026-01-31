@@ -71,7 +71,7 @@ TARGET_COLUMN = 'diagnosis'
 MODEL_FILES = {
     'Logistic Regression': 'logistic_regression_model.pkl',
     'Decision Tree': 'decision_tree_model.pkl',
-    'K-Nearest Neighbor': 'k_nearest_neighbor_model.pkl',
+    'K-Nearest Neighbor': 'k-nearest_neighbor_model.pkl',
     'Naive Bayes': 'naive_bayes_model.pkl',
     'Random Forest': 'random_forest_model.pkl',
     'XGBoost': 'xgboost_model.pkl'
