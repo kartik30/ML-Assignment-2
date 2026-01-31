@@ -122,6 +122,12 @@ def load_scaler():
         st.error(f"❌ Error loading scaler: {e}")
         return None
 
+def load_model_and_scaler(model_name):
+    """Load both model and scaler"""
+    model = load_model(model_name)
+    scaler = load_scaler()
+    return model, scaler
+
 @st.cache_data
 def load_results():
     """Load model results from CSV"""
@@ -135,6 +141,30 @@ def load_results():
     except Exception as e:
         st.error(f"❌ Error loading results: {e}")
         return None
+
+def calculate_metrics(y_true, y_pred, y_proba=None):
+    """Calculate all evaluation metrics"""
+    metrics = {}
+    
+    try:
+        metrics['Accuracy'] = accuracy_score(y_true, y_pred)
+        metrics['Precision'] = precision_score(y_true, y_pred, zero_division=0)
+        metrics['Recall'] = recall_score(y_true, y_pred, zero_division=0)
+        metrics['F1 Score'] = f1_score(y_true, y_pred, zero_division=0)
+        metrics['MCC'] = matthews_corrcoef(y_true, y_pred)
+        
+        if y_proba is not None:
+            metrics['AUC'] = roc_auc_score(y_true, y_proba)
+        else:
+            metrics['AUC'] = 0.0
+            
+    except Exception as e:
+        st.error(f"Error calculating metrics: {e}")
+        # Return default values
+        for key in ['Accuracy', 'Precision', 'Recall', 'F1 Score', 'MCC', 'AUC']:
+            metrics[key] = 0.0
+    
+    return metrics
 
 def plot_confusion_matrix(cm, model_name):
     """Create confusion matrix heatmap"""
@@ -298,271 +328,271 @@ def main():
         else:
             st.warning("⚠️ Model results not found. Please run the training notebook first.")
     
-# ==========================================
-# TAB 2: PREDICTIONS (FIXED)
-# ==========================================
-
-with tab2:
-    st.header("🔮 Make Predictions on Uploaded Data")
+    # ==========================================
+    # TAB 2: PREDICTIONS
+    # ==========================================
     
-    if uploaded_file is not None:
+    with tab2:
+        st.header("🔮 Make Predictions on Uploaded Data")
         
-        try:
-            # Load uploaded data
-            test_data = pd.read_csv(uploaded_file)
+        if uploaded_file is not None:
             
-            st.success(f"✅ File uploaded successfully! Shape: {test_data.shape}")
-            
-            # Show data preview
-            with st.expander("📋 View Uploaded Data (First 10 rows)"):
-                st.dataframe(test_data.head(10), use_container_width=True)
-            
-            # Load model and scaler
-            model, scaler = load_model_and_scaler(selected_model)
-            
-            if model is not None and scaler is not None:
+            try:
+                # Load uploaded data
+                test_data = pd.read_csv(uploaded_file)
                 
-                # Identify features and target
-                target_col = None
-                possible_targets = ['diagnosis', 'target', 'class', 'label', 'output']
+                st.success(f"✅ File uploaded successfully! Shape: {test_data.shape}")
                 
-                for col in possible_targets:
-                    if col in test_data.columns:
-                        target_col = col
-                        break
+                # Show data preview
+                with st.expander("📋 View Uploaded Data (First 10 rows)"):
+                    st.dataframe(test_data.head(10), use_container_width=True)
                 
-                # Prepare features
-                if target_col:
-                    st.info(f"ℹ️ Target column '{target_col}' detected.")
+                # Load model and scaler
+                model, scaler = load_model_and_scaler(selected_model)
+                
+                if model is not None and scaler is not None:
                     
-                    X_test = test_data.drop(columns=[target_col])
-                    y_test = test_data[target_col].copy()
+                    # Identify features and target
+                    target_col = None
+                    possible_targets = ['diagnosis', 'target', 'class', 'label', 'output']
                     
-                    # Display original target values
-                    st.write(f"**Original target values:** {y_test.unique()}")
+                    for col in possible_targets:
+                        if col in test_data.columns:
+                            target_col = col
+                            break
                     
-                    # Encode if necessary (M/B -> 1/0)
-                    if y_test.dtype == 'object':
-                        # Clean values
-                        y_test = y_test.str.strip().str.upper()
+                    # Prepare features
+                    if target_col:
+                        st.info(f"ℹ️ Target column '{target_col}' detected.")
                         
-                        # Map to 0/1
-                        mapping = {'M': 1, 'MALIGNANT': 1, 'B': 0, 'BENIGN': 0}
-                        y_test = y_test.map(mapping)
+                        X_test = test_data.drop(columns=[target_col])
+                        y_test = test_data[target_col].copy()
                         
-                        # Check for NaN
-                        if y_test.isna().any():
-                            st.warning(f"⚠️ Warning: {y_test.isna().sum()} target values couldn't be mapped!")
-                            st.write("**Unmapped values:**")
-                            unmapped = test_data[target_col][y_test.isna()].unique()
-                            st.write(unmapped)
+                        # Display original target values
+                        st.write(f"**Original target values:** {y_test.unique()}")
+                        
+                        # Encode if necessary (M/B -> 1/0)
+                        if y_test.dtype == 'object':
+                            # Clean values
+                            y_test = y_test.str.strip().str.upper()
                             
-                            # Drop NaN rows
-                            valid_mask = ~y_test.isna()
-                            X_test = X_test[valid_mask]
-                            y_test = y_test[valid_mask]
+                            # Map to 0/1
+                            mapping = {'M': 1, 'MALIGNANT': 1, 'B': 0, 'BENIGN': 0}
+                            y_test = y_test.map(mapping)
                             
-                            st.info(f"✅ Kept {len(y_test)} valid samples, removed {(~valid_mask).sum()} invalid")
-                    
-                    # Ensure integer type
-                    y_test = y_test.astype(int)
-                    
-                    st.success(f"✅ Target encoded: 0=Benign, 1=Malignant")
-                    st.write(f"**Class distribution:** 0: {sum(y_test==0)}, 1: {sum(y_test==1)}")
-                    
-                    has_labels = True
-                    
-                else:
-                    X_test = test_data.copy()
-                    has_labels = False
-                    st.info("ℹ️ No target column found. Predictions only.")
-                
-                # Remove 'id' column if exists
-                if 'id' in X_test.columns:
-                    X_test = X_test.drop(columns=['id'])
-                
-                # Check for NaN in features
-                if X_test.isna().any().any():
-                    st.warning(f"⚠️ Warning: Features contain {X_test.isna().sum().sum()} NaN values")
-                    
-                    # Option 1: Drop rows with NaN
-                    st.write("**Handling missing values...**")
-                    X_test = X_test.dropna()
-                    
-                    if has_labels:
-                        # Align y_test with X_test
-                        y_test = y_test.loc[X_test.index]
-                    
-                    st.info(f"✅ Removed rows with missing values. Remaining: {len(X_test)}")
-                
-                # Scale features
-                try:
-                    X_test_scaled = scaler.transform(X_test)
-                except Exception as e:
-                    st.error(f"❌ Error scaling features: {e}")
-                    st.error("Ensure uploaded data has the same features as training data.")
-                    st.stop()
-                
-                # Make predictions
-                predictions = model.predict(X_test_scaled)
-                
-                # Get probabilities if available
-                if hasattr(model, 'predict_proba'):
-                    predictions_proba = model.predict_proba(X_test_scaled)
-                else:
-                    predictions_proba = None
-                
-                # Display predictions
-                st.markdown("---")
-                st.subheader("📊 Prediction Results")
-                
-                # Create results dataframe
-                results_data = {
-                    'Sample Index': range(len(predictions)),
-                    'Prediction': ['Malignant' if p == 1 else 'Benign' for p in predictions],
-                    'Prediction Code': predictions
-                }
-                
-                if predictions_proba is not None:
-                    results_data['Prob (Benign)'] = predictions_proba[:, 0]
-                    results_data['Prob (Malignant)'] = predictions_proba[:, 1]
-                    results_data['Confidence'] = np.max(predictions_proba, axis=1)
-                
-                pred_df = pd.DataFrame(results_data)
-                
-                st.dataframe(pred_df, use_container_width=True)
-                
-                # Summary statistics
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.metric("📝 Total Samples", len(predictions))
-                with col2:
-                    st.metric("🔴 Predicted Malignant", int(sum(predictions == 1)))
-                with col3:
-                    st.metric("🟢 Predicted Benign", int(sum(predictions == 0)))
-                
-                # Download predictions
-                csv = pred_df.to_csv(index=False)
-                st.download_button(
-                    label="📥 Download Predictions as CSV",
-                    data=csv,
-                    file_name=f"predictions_{selected_model.replace(' ', '_')}.csv",
-                    mime='text/csv',
-                    help="Download prediction results"
-                )
-                
-                # If actual labels exist, evaluate
-                if has_labels and len(y_test) > 0:
-                    st.markdown("---")
-                    st.subheader("✅ Model Evaluation on Uploaded Data")
-                    
-                    # Ensure y_test and predictions have same length
-                    if len(y_test) != len(predictions):
-                        st.error(f"❌ Length mismatch: y_test={len(y_test)}, predictions={len(predictions)}")
-                        st.stop()
-                    
-                    # Check for NaN one more time
-                    if pd.isna(y_test).any():
-                        st.error(f"❌ y_test still contains NaN values!")
-                        st.write(f"NaN count: {pd.isna(y_test).sum()}")
-                        st.stop()
-                    
-                    # Calculate metrics
-                    if predictions_proba is not None:
-                        y_proba = predictions_proba[:, 1]
+                            # Check for NaN
+                            if y_test.isna().any():
+                                st.warning(f"⚠️ Warning: {y_test.isna().sum()} target values couldn't be mapped!")
+                                st.write("**Unmapped values:**")
+                                unmapped = test_data[target_col][y_test.isna()].unique()
+                                st.write(unmapped)
+                                
+                                # Drop NaN rows
+                                valid_mask = ~y_test.isna()
+                                X_test = X_test[valid_mask]
+                                y_test = y_test[valid_mask]
+                                
+                                st.info(f"✅ Kept {len(y_test)} valid samples, removed {(~valid_mask).sum()} invalid")
+                        
+                        # Ensure integer type
+                        y_test = y_test.astype(int)
+                        
+                        st.success(f"✅ Target encoded: 0=Benign, 1=Malignant")
+                        st.write(f"**Class distribution:** 0: {sum(y_test==0)}, 1: {sum(y_test==1)}")
+                        
+                        has_labels = True
+                        
                     else:
-                        y_proba = None
+                        X_test = test_data.copy()
+                        has_labels = False
+                        st.info("ℹ️ No target column found. Predictions only.")
                     
+                    # Remove 'id' column if exists
+                    if 'id' in X_test.columns:
+                        X_test = X_test.drop(columns=['id'])
+                    
+                    # Check for NaN in features
+                    if X_test.isna().any().any():
+                        st.warning(f"⚠️ Warning: Features contain {X_test.isna().sum().sum()} NaN values")
+                        
+                        # Option 1: Drop rows with NaN
+                        st.write("**Handling missing values...**")
+                        X_test = X_test.dropna()
+                        
+                        if has_labels:
+                            # Align y_test with X_test
+                            y_test = y_test.loc[X_test.index]
+                        
+                        st.info(f"✅ Removed rows with missing values. Remaining: {len(X_test)}")
+                    
+                    # Scale features
                     try:
-                        metrics = calculate_metrics(y_test, predictions, y_proba)
-                        
-                        # Display metrics
-                        col1, col2, col3, col4, col5, col6 = st.columns(6)
-                        
-                        with col1:
-                            st.metric("Accuracy", f"{metrics['Accuracy']:.4f}")
-                        with col2:
-                            st.metric("AUC", f"{metrics['AUC']:.4f}")
-                        with col3:
-                            st.metric("Precision", f"{metrics['Precision']:.4f}")
-                        with col4:
-                            st.metric("Recall", f"{metrics['Recall']:.4f}")
-                        with col5:
-                            st.metric("F1 Score", f"{metrics['F1 Score']:.4f}")
-                        with col6:
-                            st.metric("MCC", f"{metrics['MCC']:.4f}")
-                        
-                        # Confusion Matrix
-                        st.markdown("---")
-                        st.subheader("🔢 Confusion Matrix")
-                        
-                        cm = confusion_matrix(y_test, predictions)
-                        
-                        col1, col2 = st.columns([1, 1])
-                        
-                        with col1:
-                            # Display confusion matrix plot
-                            fig = plot_confusion_matrix(cm, selected_model)
-                            st.pyplot(fig)
-                        
-                        with col2:
-                            # Display metrics breakdown
-                            st.write("")
-                            st.write("")
-                            st.write("**Confusion Matrix Breakdown:**")
-                            st.write(f"- **True Negatives (TN):** {cm[0,0]}")
-                            st.write(f"- **False Positives (FP):** {cm[0,1]}")
-                            st.write(f"- **False Negatives (FN):** {cm[1,0]}")
-                            st.write(f"- **True Positives (TP):** {cm[1,1]}")
-                            
-                            st.write("")
-                            st.write("**Clinical Interpretation:**")
-                            
-                            sensitivity = cm[1,1] / (cm[1,1] + cm[1,0]) if (cm[1,1] + cm[1,0]) > 0 else 0
-                            specificity = cm[0,0] / (cm[0,0] + cm[0,1]) if (cm[0,0] + cm[0,1]) > 0 else 0
-                            
-                            st.write(f"- **Sensitivity:** {sensitivity:.4f}")
-                            st.write(f"- **Specificity:** {specificity:.4f}")
-                        
-                        # Classification Report
-                        st.markdown("---")
-                        st.subheader("📝 Detailed Classification Report")
-                        
-                        report = classification_report(
-                            y_test, 
-                            predictions, 
-                            target_names=['Benign', 'Malignant'],
-                            output_dict=True,
-                            zero_division=0
-                        )
-                        
-                        report_df = pd.DataFrame(report).transpose()
-                        st.dataframe(
-                            report_df.style.format("{:.4f}").background_gradient(cmap='RdYlGn', subset=['f1-score']),
-                            use_container_width=True
-                        )
-                        
+                        X_test_scaled = scaler.transform(X_test)
                     except Exception as e:
-                        st.error(f"❌ Error calculating metrics: {str(e)}")
-                        st.exception(e)
-                
-        except pd.errors.EmptyDataError:
-            st.error("❌ Uploaded file is empty!")
-        
-        except Exception as e:
-            st.error(f"❌ Error processing file: {str(e)}")
-            st.info("💡 Make sure your CSV has the same features as the training data.")
+                        st.error(f"❌ Error scaling features: {e}")
+                        st.error("Ensure uploaded data has the same features as training data.")
+                        st.stop()
+                    
+                    # Make predictions
+                    predictions = model.predict(X_test_scaled)
+                    
+                    # Get probabilities if available
+                    if hasattr(model, 'predict_proba'):
+                        predictions_proba = model.predict_proba(X_test_scaled)
+                    else:
+                        predictions_proba = None
+                    
+                    # Display predictions
+                    st.markdown("---")
+                    st.subheader("📊 Prediction Results")
+                    
+                    # Create results dataframe
+                    results_data = {
+                        'Sample Index': range(len(predictions)),
+                        'Prediction': ['Malignant' if p == 1 else 'Benign' for p in predictions],
+                        'Prediction Code': predictions
+                    }
+                    
+                    if predictions_proba is not None:
+                        results_data['Prob (Benign)'] = predictions_proba[:, 0]
+                        results_data['Prob (Malignant)'] = predictions_proba[:, 1]
+                        results_data['Confidence'] = np.max(predictions_proba, axis=1)
+                    
+                    pred_df = pd.DataFrame(results_data)
+                    
+                    st.dataframe(pred_df, use_container_width=True)
+                    
+                    # Summary statistics
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.metric("📝 Total Samples", len(predictions))
+                    with col2:
+                        st.metric("🔴 Predicted Malignant", int(sum(predictions == 1)))
+                    with col3:
+                        st.metric("🟢 Predicted Benign", int(sum(predictions == 0)))
+                    
+                    # Download predictions
+                    csv = pred_df.to_csv(index=False)
+                    st.download_button(
+                        label="📥 Download Predictions as CSV",
+                        data=csv,
+                        file_name=f"predictions_{selected_model.replace(' ', '_')}.csv",
+                        mime='text/csv',
+                        help="Download prediction results"
+                    )
+                    
+                    # If actual labels exist, evaluate
+                    if has_labels and len(y_test) > 0:
+                        st.markdown("---")
+                        st.subheader("✅ Model Evaluation on Uploaded Data")
+                        
+                        # Ensure y_test and predictions have same length
+                        if len(y_test) != len(predictions):
+                            st.error(f"❌ Length mismatch: y_test={len(y_test)}, predictions={len(predictions)}")
+                            st.stop()
+                        
+                        # Check for NaN one more time
+                        if pd.isna(y_test).any():
+                            st.error(f"❌ y_test still contains NaN values!")
+                            st.write(f"NaN count: {pd.isna(y_test).sum()}")
+                            st.stop()
+                        
+                        # Calculate metrics
+                        if predictions_proba is not None:
+                            y_proba = predictions_proba[:, 1]
+                        else:
+                            y_proba = None
+                        
+                        try:
+                            metrics = calculate_metrics(y_test, predictions, y_proba)
+                            
+                            # Display metrics
+                            col1, col2, col3, col4, col5, col6 = st.columns(6)
+                            
+                            with col1:
+                                st.metric("Accuracy", f"{metrics['Accuracy']:.4f}")
+                            with col2:
+                                st.metric("AUC", f"{metrics['AUC']:.4f}")
+                            with col3:
+                                st.metric("Precision", f"{metrics['Precision']:.4f}")
+                            with col4:
+                                st.metric("Recall", f"{metrics['Recall']:.4f}")
+                            with col5:
+                                st.metric("F1 Score", f"{metrics['F1 Score']:.4f}")
+                            with col6:
+                                st.metric("MCC", f"{metrics['MCC']:.4f}")
+                            
+                            # Confusion Matrix
+                            st.markdown("---")
+                            st.subheader("🔢 Confusion Matrix")
+                            
+                            cm = confusion_matrix(y_test, predictions)
+                            
+                            col1, col2 = st.columns([1, 1])
+                            
+                            with col1:
+                                # Display confusion matrix plot
+                                fig = plot_confusion_matrix(cm, selected_model)
+                                st.pyplot(fig)
+                            
+                            with col2:
+                                # Display metrics breakdown
+                                st.write("")
+                                st.write("")
+                                st.write("**Confusion Matrix Breakdown:**")
+                                st.write(f"- **True Negatives (TN):** {cm[0,0]}")
+                                st.write(f"- **False Positives (FP):** {cm[0,1]}")
+                                st.write(f"- **False Negatives (FN):** {cm[1,0]}")
+                                st.write(f"- **True Positives (TP):** {cm[1,1]}")
+                                
+                                st.write("")
+                                st.write("**Clinical Interpretation:**")
+                                
+                                sensitivity = cm[1,1] / (cm[1,1] + cm[1,0]) if (cm[1,1] + cm[1,0]) > 0 else 0
+                                specificity = cm[0,0] / (cm[0,0] + cm[0,1]) if (cm[0,0] + cm[0,1]) > 0 else 0
+                                
+                                st.write(f"- **Sensitivity:** {sensitivity:.4f}")
+                                st.write(f"- **Specificity:** {specificity:.4f}")
+                            
+                            # Classification Report
+                            st.markdown("---")
+                            st.subheader("📝 Detailed Classification Report")
+                            
+                            report = classification_report(
+                                y_test, 
+                                predictions, 
+                                target_names=['Benign', 'Malignant'],
+                                output_dict=True,
+                                zero_division=0
+                            )
+                            
+                            report_df = pd.DataFrame(report).transpose()
+                            st.dataframe(
+                                report_df.style.format("{:.4f}").background_gradient(cmap='RdYlGn', subset=['f1-score']),
+                                use_container_width=True
+                            )
+                            
+                        except Exception as e:
+                            st.error(f"❌ Error calculating metrics: {str(e)}")
+                            st.exception(e)
+                    
+            except pd.errors.EmptyDataError:
+                st.error("❌ Uploaded file is empty!")
             
-            with st.expander("🔍 See error details"):
-                st.exception(e)
-    
-    else:
-        st.info("👈 Please upload a CSV file from the sidebar to make predictions")
+            except Exception as e:
+                st.error(f"❌ Error processing file: {str(e)}")
+                st.info("💡 Make sure your CSV has the same features as the training data.")
+                
+                with st.expander("🔍 See error details"):
+                    st.exception(e)
         
-        st.markdown("### 📌 Sample Data Format")
-        
-        st.code("""
+        else:
+            st.info("👈 Please upload a CSV file from the sidebar to make predictions")
+            
+            st.markdown("### 📌 Sample Data Format")
+            
+            st.code("""
 Required features: 30 numeric features
 
 Features include:
@@ -577,7 +607,7 @@ Example CSV:
 radius_mean,texture_mean,...,diagnosis
 17.99,10.38,...,M
 13.54,14.36,...,B
-        """, language='text')
+            """, language='text')
     
     # ==========================================
     # TAB 3: DOCUMENTATION
