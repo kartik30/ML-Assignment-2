@@ -21,6 +21,49 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ==========================================
+# DOWNLOAD TEST DATA BUTTON (TOP RIGHT)
+# ==========================================
+
+GITHUB_CSV_URL = "https://raw.githubusercontent.com/kartik30/ML-Assignment-2/main/data.csv"
+
+# Custom CSS for external link button
+st.markdown("""
+<style>
+.download-right {
+    text-align: right;
+    margin-bottom: 20px;
+}
+.github-download-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #ff4b4b;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+.github-download-btn:hover {
+    background-color: #ff3333;
+    color: white;
+    text-decoration: none;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Right-aligned container
+st.markdown(f"""
+<div class="download-right">
+    <a href="{GITHUB_CSV_URL}" download="breast_cancer_test_data.csv" class="github-download-btn">
+        ⬇ Download Test Data
+    </a>
+</div>
+""", unsafe_allow_html=True)
+
+
+
+# ==========================================
 # PAGE CONFIGURATION
 # ==========================================
 
