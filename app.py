@@ -55,7 +55,7 @@ st.markdown("""
 # Right-aligned container
 st.markdown(f"""
 <div class="download-right">
-    <a href="{GITHUB_CSV_URL}" download="breast_cancer_test_data.csv" class="github-download-btn">
+    <a href="{GITHUB_CSV_URL}" download="data.csv" class="github-download-btn">
         ⬇ Download Test Data
     </a>
 </div>
