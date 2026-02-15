@@ -61,3 +61,11 @@ Class Imbalance: Mild imbalance (ratio ≈ 1.68:1), manageable without special t
 
 
 ## How to Run Locall
+# Create new environment
+conda create -n ml_assignment python=3.9 -y
+
+# Activate it
+conda activate ml_assignment
+
+# Install all required packages
+pip install pandas numpy scikit-learn xgboost matplotlib seaborn streamlit
