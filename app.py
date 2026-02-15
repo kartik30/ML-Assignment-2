@@ -24,7 +24,7 @@ warnings.filterwarnings('ignore')
 # DOWNLOAD TEST DATA BUTTON (TOP RIGHT)
 # ==========================================
 
-GITHUB_CSV_URL = "https://raw.githubusercontent.com/kartik30/ML-Assignment-2/main/data.csv"
+GITHUB_CSV_URL = "https://github.com/kartik30/ML-Assignment-2/blob/main/data.csv"
 
 # Custom CSS for external link button
 st.markdown("""
